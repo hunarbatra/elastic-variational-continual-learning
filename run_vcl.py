@@ -40,6 +40,8 @@ def run_vcl(
     task_config: str = '', 
     batch_size: int = 256,
     coreset_size: int = 0,
+    coreset_method: str = 'random',
+    finetune_method: Optional[str] = None
 ):
     input_dim, output_dim, hidden_sizes, single_head, data_name = load_task_config(task_config)
     train_loaders, test_loaders = fetch_datasets(batch_size, num_tasks, data_name)
@@ -58,7 +60,7 @@ def run_vcl(
 
     # Initialize priors with MLE weights
     head_modules = [f"Head_{i+1}" for i in range(num_heads)]
-    prior = MLEPrior(mle_net, head_modules, single_head) # TODO
+    prior = MLEPrior(mle_net, head_modules, single_head)
     obs = tyxe.likelihoods.Categorical(-1) # Bernoulli(-1, event_dim=1) for binary
     guide = functools.partial(
         tyxe.guides.AutoNormal,
@@ -83,8 +85,7 @@ def run_vcl(
         heads_list[head_idx-1].load_state_dict(head_state_dicts[head_idx-1]) # load head for current task (PyroLinear Head)
         
         # update coreset
-        # TODO: pass which coreset selection method to use: random, k-center, pca, etc
-        curr_coreset = update_coreset(prev_coreset, train_loader, coreset_size) if coreset_size else []
+        curr_coreset = update_coreset(prev_coreset, train_loader, coreset_size, coreset_method) if coreset_size else []
 
         # Callback function to compute the Evidence Lower Bound (ELBO) which is maximized during training
         # and to minimize the Kullback-Leibler (KL) divergence for VCL
@@ -120,7 +121,7 @@ def run_vcl(
             # finetune the model on the coreset data
             bnn_coreset.net.set_task(head_idx) # set the current task head for training bnn_coreset
             print(f"Current head being used for training bnn_coreset.net: {bnn_coreset.net.get_task()}")
-            finetune_over_coreset(bnn_coreset, curr_coreset, num_epochs, callback, batch_size) # TODO: pass which finetuning technique to use
+            finetune_over_coreset(bnn_coreset, curr_coreset, num_epochs, callback, batch_size, finetune_method)
             bnn_coreset_head_state_dicts[head_idx-1] = copy.deepcopy(bnn_coreset_heads_list[head_idx-1].state_dict()) # update the bnn_coreset head for the current trained head for prediction
 
         pbar.close()
@@ -169,4 +170,4 @@ def run_vcl(
         
 if __name__ == '__main__':
     fire.Fire(run_vcl)
-
+    
