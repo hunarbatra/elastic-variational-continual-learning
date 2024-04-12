@@ -12,7 +12,7 @@ import copy
 import functools
 from models.mlp import MLP
 from data_generator import fetch_datasets
-from utils import DEVICE, USE_CUDA, save_results
+from utils import DEVICE, USE_CUDA, save_results, get_model_name
 from task_config import load_task_config
 from finetune import finetune_over_coreset
 from tqdm import tqdm
@@ -179,7 +179,7 @@ def run_coreset_only(
             prev_task_acc.append(accuracy)
 
         avg_acc = sum(prev_task_acc) / len(prev_task_acc)
-        save_results(j, prev_task_acc, avg_acc, data_name, experiment_name)
+        save_results(get_model_name('coreset_only', coreset_size, coreset_method), j, prev_task_acc, avg_acc, data_name, experiment_name)
         print(f"Train over task {i} avg: {avg_acc}")
 
         # update the previous coreset

@@ -16,7 +16,7 @@ from models.mle_prior import MLEPrior
 from models.mlp import MLP
 from trainer import train_mle
 from data_generator import fetch_datasets
-from utils import DEVICE, USE_CUDA, save_results
+from utils import DEVICE, USE_CUDA, save_results, get_model_name
 from task_config import load_task_config
 from coreset import update_coreset
 from finetune import finetune_over_coreset
@@ -256,7 +256,8 @@ def run_vcl_ewc(
             prev_task_acc.append(accuracy)
         
         avg_acc = sum(prev_task_acc) / len(prev_task_acc)
-        save_results(j, prev_task_acc, avg_acc, data_name, experiment_name)
+        save_results(get_model_name('vcl_ewc', coreset_size, coreset_method), j, prev_task_acc, avg_acc, data_name, experiment_name)
+        
         print(f"Train over task {i} avg: {avg_acc}")
         
         # propagate bnn posterior as the next prior (q_{t-1})

@@ -10,7 +10,7 @@ from models.mle_prior import MLEPrior
 
 from trainer import train_mle
 from data_generator import fetch_datasets
-from utils import DEVICE, USE_CUDA, save_results
+from utils import DEVICE, USE_CUDA, save_results, get_model_name
 from task_config import load_task_config
 
 from coreset import update_coreset
@@ -40,7 +40,7 @@ def run_vcl(
     task_config: str = '', 
     batch_size: int = 256,
     coreset_size: int = 0,
-    coreset_method: str = 'random',
+    coreset_method: str = None,
     finetune_method: Optional[str] = None
 ):
     input_dim, output_dim, hidden_sizes, single_head, data_name = load_task_config(task_config)
@@ -157,7 +157,7 @@ def run_vcl(
             prev_task_acc.append(accuracy)
             
         avg_acc = sum(prev_task_acc)/len(prev_task_acc)
-        save_results(j, prev_task_acc, avg_acc, data_name, experiment_name)
+        save_results(get_model_name('vcl', coreset_size, coreset_method), j, prev_task_acc, avg_acc, data_name, experiment_name)
         print(f"Train over task {i} avg: {avg_acc}")
         
         # propagate bnn posterior as the next prior (q_{t-1})

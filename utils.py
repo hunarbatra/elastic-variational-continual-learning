@@ -9,7 +9,7 @@ DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
 RESULTS_SCHEMA = {'trained_on': [], 'prev_tasks_acc': [], 'avg_acc': []}
 
-def save_results(trained_on, prev_task_acc, avg_acc, data_name, experiment_name):
+def save_results(model_name, trained_on, prev_task_acc, avg_acc, data_name, experiment_name):
     dir_path = f"experiments/{data_name}"
     file_path = f"{dir_path}/{experiment_name}.csv"
 
@@ -21,10 +21,14 @@ def save_results(trained_on, prev_task_acc, avg_acc, data_name, experiment_name)
         results_df = pd.read_csv(file_path)
 
     new_row = pd.DataFrame({
+        'model': [model_name],
         'trained_on': [trained_on],
-        'prev_tasks_acc': [prev_task_acc],
+        'tasks_acc': [prev_task_acc],
         'avg_acc': [avg_acc]
     })
     results_df = pd.concat([results_df, new_row], ignore_index=True)
     results_df.to_csv(file_path, index=False)
+    
+def get_model_name(base, coreset_size, coreset_method):
+    return f'{base}_{coreset_method}_{coreset_size}' if coreset_size > 0 else base
     
