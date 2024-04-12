@@ -1,5 +1,6 @@
 import torch
 import tyxe
+import pyro
 
 from utils import DEVICE    
         
