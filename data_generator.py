@@ -184,6 +184,34 @@ def make_split_cifar_dataloaders(batch_size, num_tasks):
 
     return train_loaders, test_loaders
 
+def make_fashionmnist_dataloaders(batch_size, num_tasks):
+    train_loaders = []
+    test_loaders = []
+    
+    transform = transforms.Compose([
+        transforms.ToTensor(),  
+        transforms.Normalize((0.5,), (0.5,))
+    ])
+    
+    train_dataset = datasets.FashionMNIST("./data", train=True, download=True, transform=transform)
+    test_dataset = datasets.FashionMNIST("./data", train=False, download=True, transform=transform)
+    
+    num_classes = 10 
+    classes_per_task = num_classes // num_tasks
+    
+    for task in range(num_tasks):
+        task_classes = list(range(task * classes_per_task, (task + 1) * classes_per_task))
+        task_train_indices = [i for i, t in enumerate(train_dataset.targets) if t in task_classes]
+        task_test_indices = [i for i, t in enumerate(test_dataset.targets) if t in task_classes]
+        task_train_dataset = data.Subset(train_dataset, task_train_indices)
+        task_test_dataset = data.Subset(test_dataset, task_test_indices)
+        train_loader = data.DataLoader(task_train_dataset, batch_size=batch_size, shuffle=True, pin_memory=USE_CUDA)
+        test_loader = data.DataLoader(task_test_dataset, batch_size=batch_size, shuffle=False, pin_memory=USE_CUDA)
+        train_loaders.append(train_loader)
+        test_loaders.append(test_loader)
+    
+    return train_loaders, test_loaders
+
 def fetch_datasets(batch_size, num_tasks, data_name='permuted_mnist'):
     if data_name == 'permuted_mnist':
         return make_permuted_mnist_dataloaders(batch_size, num_tasks)
@@ -193,5 +221,7 @@ def fetch_datasets(batch_size, num_tasks, data_name='permuted_mnist'):
         return make_nomnist_dataloaders(batch_size, num_tasks)
     elif data_name == 'split_cifar':
         return make_split_cifar_dataloaders(batch_size, num_tasks)
+    elif data_name == 'fashion_mnist':
+        return make_fashionmnist_dataloaders(batch_size, num_tasks)
     else:
         raise ValueError("Invalid data_name provided. Expected data_name in ['permuted_mnist', 'split_mnist', 'no_mnist', 'split_cifar'].")

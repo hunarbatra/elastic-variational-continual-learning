@@ -31,6 +31,14 @@ split_cifar = {
     'data_name': 'split_cifar',
 }
 
+split_fashion_mnist = {
+    'input_dim': 784,
+    'output_dim': 10, 
+    'hidden_size': [150, 150, 150, 150],
+    'single_head': False,
+    'data_name': 'fashion_mnist',
+}
+
 permuted_mnist_mh = {
     'input_dim':  784,
     'output_dim': 10,
