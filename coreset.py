@@ -1,29 +1,34 @@
-import random
-import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.metrics.pairwise import euclidean_distances
-from scipy.spatial.distance import cdist
-import heapq
-
 import torch
 import pyro
 import tyxe
+
+import random
 import copy
 import functools
+import heapq
+import fire
+
+import numpy as np
+
+from sklearn.decomposition import PCA
+from sklearn.metrics.pairwise import euclidean_distances
+from scipy.spatial.distance import cdist
+
+import pyro.distributions as dist
+
 from models.mlp import MLP
 from data.data_generator import fetch_datasets
 from utils.util import DEVICE, USE_CUDA, save_results, get_model_name
 from utils.task_config import load_task_config
 from trainer.finetune import finetune_over_coreset
+
 from tqdm import tqdm
 from typing import Optional, List
-import fire
-
-import pyro.distributions as dist
 
 
 def update_coreset(prev_coreset, train_loader, coreset_size, selection_method='random'):
     curr_task_data = list(train_loader.dataset)
+    curr_task_data = random.sample(curr_task_data, min(coreset_size*2, len(curr_task_data))) # truncating current tasks data to {coreset_size * 2} to make it lil faster
     combined_data = curr_task_data + prev_coreset if prev_coreset else curr_task_data
     
     if selection_method == 'random':
@@ -37,68 +42,58 @@ def update_coreset(prev_coreset, train_loader, coreset_size, selection_method='r
     
     return curr_coreset
 
-def k_center_coreset(data, coreset_size):
-    data_array = np.array([x.cpu().numpy() for x, _ in data])
+def k_center_coreset(data, coreset_size, via_pca=False):
+    if not via_pca:
+        data_array = np.array([x.cpu().numpy() for x, _ in data])
+    else:
+        data_array = data
+        
     num_points = len(data_array)
 
-    # Initialize the coreset with a random data point
-    coreset_indices = [random.randint(0, num_points - 1)]
-
-    # Initialize a max-heap to store the distances and indices
-    heap = [(-float('inf'), i) for i in range(num_points)]
+    # Initialize the coreset with the first data point
+    initial_index = 0  # deterministic start point
+    coreset_indices = [initial_index]
+    
+    # Initialize the distances from the initial coreset point to all other points
+    distances = np.full(num_points, np.inf)
+    distances[initial_index] = 0
+    for i in range(num_points):
+        if i != initial_index:
+            distances[i] = np.linalg.norm(data_array[i] - data_array[initial_index])
+    
+    # max-heap for maintaining max distances
+    heap = [(-dist, i) for i, dist in enumerate(distances)]
     heapq.heapify(heap)
 
     # Iteratively select the farthest point from the current coreset
-    for _ in range(coreset_size - 1):
-        while True:
-            _, farthest_point_index = heapq.heappop(heap)
-            if farthest_point_index not in coreset_indices:
-                break
-        coreset_indices.append(farthest_point_index)
+    while len(coreset_indices) < coreset_size:
+        _, farthest_point_index = heapq.heappop(heap)
+        if farthest_point_index not in coreset_indices:
+            coreset_indices.append(farthest_point_index)
+            
+            # Update the distances and the heap for the remaining points
+            for i in range(num_points):
+                if i not in coreset_indices:
+                    new_distance = np.linalg.norm(data_array[i] - data_array[farthest_point_index])
+                    if new_distance < distances[i]:
+                        distances[i] = new_distance
+                        heap = [(-distances[j], j) for j in range(num_points) if j not in coreset_indices] # Rebuild the heap with updated distances
+                        heapq.heapify(heap)
 
-        # Update the distances in the max-heap
-        for i in range(num_points):
-            if i not in coreset_indices:
-                dist = min(np.sum((data_array[farthest_point_index] - data_array[i])**2), -heap[0][0] if heap else float('inf'))
-                if heap:
-                    heapq.heapreplace(heap, (-dist, i))
-                else:
-                    heapq.heappush(heap, (-dist, i))
-
+    if via_pca:
+        return coreset_indices
+    
     return [data[i] for i in coreset_indices]
 
-def pca_k_center_coreset(data, coreset_size):
+
+def pca_k_center_coreset(data, coreset_size, n_components=20):
     data_array = np.array([x.cpu().numpy() for x, _ in data])
-
-    # Perform PCA to reduce the dimensionality
-    pca = PCA(n_components=min(coreset_size, data_array.shape[1]))
+    
+    # Apply PCA to reduce dimensionality
+    pca = PCA(n_components=n_components)
     reduced_data = pca.fit_transform(data_array)
-    num_points = len(reduced_data)
-
-    # Initialize the coreset with a random data point
-    coreset_indices = [random.randint(0, num_points - 1)]
-
-    # Initialize a max-heap to store the distances and indices
-    heap = [(-float('inf'), i) for i in range(num_points)]
-    heapq.heapify(heap)
-
-    # Iteratively select the farthest point from the current coreset
-    for _ in range(coreset_size - 1):
-        while True:
-            _, farthest_point_index = heapq.heappop(heap)
-            if farthest_point_index not in coreset_indices:
-                break
-        coreset_indices.append(farthest_point_index)
-
-        # Update the distances in the max-heap
-        for i in range(num_points):
-            if i not in coreset_indices:
-                dist = min(np.sum((reduced_data[farthest_point_index] - reduced_data[i])**2), -heap[0][0] if heap else float('inf'))
-                if heap:
-                    heapq.heapreplace(heap, (-dist, i))
-                else:
-                    heapq.heappush(heap, (-dist, i))
-
+    
+    coreset_indices = k_center_coreset(reduced_data, coreset_size, via_pca=True)
     return [data[i] for i in coreset_indices]
 
 def run_coreset_only(
@@ -108,7 +103,8 @@ def run_coreset_only(
     task_config: str = '',
     batch_size: int = 256,
     coreset_size: int = 200,
-    coreset_method: str = 'random'
+    coreset_method: str = 'random',
+    model_suffix: Optional[str] = None,
 ):
     input_dim, output_dim, hidden_sizes, single_head, data_name = load_task_config(task_config)
     train_loaders, test_loaders = fetch_datasets(batch_size, num_tasks, data_name)
@@ -176,7 +172,7 @@ def run_coreset_only(
             prev_task_acc.append(accuracy)
 
         avg_acc = sum(prev_task_acc) / len(prev_task_acc)
-        save_results(get_model_name('coreset_only', coreset_size, coreset_method), j, prev_task_acc, avg_acc, data_name, experiment_name, num_tasks)
+        save_results(get_model_name('coreset_only', coreset_size, coreset_method, model_suffix), j, prev_task_acc, avg_acc, data_name, experiment_name, num_tasks)
         print(f"Train over task {i} avg: {avg_acc}")
 
         # update the previous coreset
