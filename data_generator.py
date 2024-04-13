@@ -1,4 +1,5 @@
 import os
+import random
 
 import torch
 import torch.utils.data as data
@@ -96,23 +97,13 @@ class NotMNISTDataset(Dataset):
         image_path = self.image_paths[index]
         try:
             image = Image.open(image_path).convert("L")  # Convert to grayscale
-        except UnidentifiedImageError: # Handle the case when the image cannot be identified
+        except UnidentifiedImageError:  # Handle the case when the image cannot be identified
             print(f"Skipping unidentified image: {image_path}")
-            return None, None
-
+            return self.__getitem__(random.randint(0, len(self) - 1))  # Retry with a random image
         target = self.letters.index(os.path.basename(os.path.dirname(image_path)))
-
         if self.transform:
             image = self.transform(image)
-
         return image, target
-
-def collate_fn(batch):
-    batch = list(filter(lambda x: x[0] is not None and x[1] is not None, batch))
-    if len(batch) == 0:  # Return an empty batch with the correct data structure
-        return torch.tensor([]).to(DEVICE), torch.tensor([]).to(DEVICE)
-    images, targets = torch.utils.data.dataloader.default_collate(batch)
-    return images.to(DEVICE), targets.to(DEVICE)
 
 def make_nomnist_dataloaders(batch_size, num_tasks):
     data_dir = "./data/notMNIST_small"
@@ -131,8 +122,8 @@ def make_nomnist_dataloaders(batch_size, num_tasks):
         test_letters = [sets_0[task], sets_1[task]]
         train_dataset = NotMNISTDataset(data_dir, train_letters, transform=transform)
         test_dataset = NotMNISTDataset(data_dir, test_letters, transform=transform)
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
-        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
         train_loaders.append(train_loader)
         test_loaders.append(test_loader)
     return train_loaders, test_loaders
