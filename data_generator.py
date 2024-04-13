@@ -30,9 +30,9 @@ def make_permuted_mnist_dataloaders(batch_size, num_tasks):
         test_data = test_data[:, perm]
 
         train_loaders.append(data.DataLoader(data.TensorDataset(train_data, train_targets),
-                                             batch_size, shuffle=True, pin_memory=USE_CUDA))
+                                             batch_size, shuffle=True))
         test_loaders.append(data.DataLoader(data.TensorDataset(test_data, test_targets),
-                                            batch_size, shuffle=False, pin_memory=USE_CUDA))
+                                            batch_size, shuffle=False))
 
     return train_loaders, test_loaders
 
@@ -67,9 +67,9 @@ def make_split_mnist_dataloaders(batch_size, num_tasks):
         test_task_targets = test_task_targets.long().to(DEVICE)
 
         train_loaders.append(data.DataLoader(data.TensorDataset(train_task_data, train_task_targets),
-                                             batch_size, shuffle=True, pin_memory=USE_CUDA))
+                                             batch_size, shuffle=True))
         test_loaders.append(data.DataLoader(data.TensorDataset(test_task_data, test_task_targets),
-                                            batch_size, shuffle=False, pin_memory=USE_CUDA))
+                                            batch_size, shuffle=False))
 
     return train_loaders, test_loaders
 
@@ -118,30 +118,23 @@ def make_nomnist_dataloaders(batch_size, num_tasks):
     data_dir = "./data/notMNIST_small"
     train_loaders = []
     test_loaders = []
-
     sets_0 = ['A', 'B', 'C', 'D', 'E']
     sets_1 = ['F', 'G', 'H', 'I', 'J']
-
     transform = transforms.Compose([
         transforms.Resize((28, 28)),
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,)),
         transforms.Lambda(lambda x: torch.flatten(x))
     ])
-
     for task in range(num_tasks):
         train_letters = [sets_0[task], sets_1[task]]
         test_letters = [sets_0[task], sets_1[task]]
-
         train_dataset = NotMNISTDataset(data_dir, train_letters, transform=transform)
         test_dataset = NotMNISTDataset(data_dir, test_letters, transform=transform)
-
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
-
         train_loaders.append(train_loader)
         test_loaders.append(test_loader)
-
     return train_loaders, test_loaders
 
 def make_split_cifar_dataloaders(batch_size, num_tasks):
@@ -174,8 +167,8 @@ def make_split_cifar_dataloaders(batch_size, num_tasks):
             train_dataset = data.Subset(train_dataset, train_indices)
             test_dataset = data.Subset(test_dataset, test_indices)
 
-            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=USE_CUDA)
-            test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=USE_CUDA)
+            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+            test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
             train_loaders.append(train_loader)
             test_loaders.append(test_loader)
@@ -207,8 +200,8 @@ def make_fashionmnist_dataloaders(batch_size, num_tasks):
         task_test_indices = [i for i, t in enumerate(test_dataset.targets) if t in task_classes]
         task_train_dataset = data.Subset(train_dataset, task_train_indices)
         task_test_dataset = data.Subset(test_dataset, task_test_indices)
-        train_loader = data.DataLoader(task_train_dataset, batch_size=batch_size, shuffle=True, pin_memory=USE_CUDA)
-        test_loader = data.DataLoader(task_test_dataset, batch_size=batch_size, shuffle=False, pin_memory=USE_CUDA)
+        train_loader = data.DataLoader(task_train_dataset, batch_size=batch_size, shuffle=True)
+        test_loader = data.DataLoader(task_test_dataset, batch_size=batch_size, shuffle=False)
         train_loaders.append(train_loader)
         test_loaders.append(test_loader)
     
