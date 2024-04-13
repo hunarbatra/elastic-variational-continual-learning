@@ -7,7 +7,7 @@ import pandas as pd
 USE_CUDA = torch.cuda.is_available()
 DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
-RESULTS_SCHEMA = {'trained_on': [], 'prev_tasks_acc': [], 'avg_acc': []}
+RESULTS_SCHEMA = {'model': [], 'trained_on': [], 'tasks_acc': [], 'avg_acc': []}
 
 def save_results(model_name, trained_on, prev_task_acc, avg_acc, data_name, experiment_name):
     dir_path = f"experiments/{data_name}"
