@@ -109,7 +109,7 @@ class NotMNISTDataset(Dataset):
 
 def collate_fn(batch):
     batch = list(filter(lambda x: x[0] is not None and x[1] is not None, batch))
-    if len(batch) == 0: # Return an empty batch with the correct data structure
+    if len(batch) == 0:  # Return an empty batch with the correct data structure
         return torch.tensor([]).to(DEVICE), torch.tensor([]).to(DEVICE)
     images, targets = torch.utils.data.dataloader.default_collate(batch)
     return images.to(DEVICE), targets.to(DEVICE)
@@ -189,8 +189,10 @@ def make_fashionmnist_dataloaders(batch_size, num_tasks):
     test_loaders = []
     
     transform = transforms.Compose([
+        transforms.Resize((28, 28)),  # Resize the image to 28x28
         transforms.ToTensor(),  
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Normalize((0.5,), (0.5,)),
+        transforms.Lambda(lambda x: torch.flatten(x))  # Flatten the input tensor
     ])
     
     train_dataset = datasets.FashionMNIST("./data", train=True, download=True, transform=transform)
