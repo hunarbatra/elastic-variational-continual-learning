@@ -14,7 +14,7 @@ from models.mlp import MLP
 from data_generator import fetch_datasets
 from utils import DEVICE, USE_CUDA, save_results, get_model_name
 from task_config import load_task_config
-from finetune import finetune_over_coreset
+from trainer.finetune import finetune_over_coreset
 from tqdm import tqdm
 from typing import Optional, List
 import fire
@@ -24,7 +24,6 @@ import pyro.distributions as dist
 
 def update_coreset(prev_coreset, train_loader, coreset_size, selection_method='random'):
     curr_task_data = list(train_loader.dataset)
-    curr_task_data = random.sample(curr_task_data, min(coreset_size, len(curr_task_data)))
     combined_data = curr_task_data + prev_coreset if prev_coreset else curr_task_data
     
     if selection_method == 'random':
@@ -33,8 +32,6 @@ def update_coreset(prev_coreset, train_loader, coreset_size, selection_method='r
         curr_coreset = k_center_coreset(combined_data, coreset_size)
     elif selection_method == 'pca-k-center':
         curr_coreset = pca_k_center_coreset(combined_data, coreset_size)
-    # elif selection_method == 'vi':
-    #     curr_coreset = vi_coreset(combined_data, min(coreset_size, len(combined_data)))
     else:
         raise ValueError(f"Invalid selection method: {selection_method}")
     
@@ -179,7 +176,7 @@ def run_coreset_only(
             prev_task_acc.append(accuracy)
 
         avg_acc = sum(prev_task_acc) / len(prev_task_acc)
-        save_results(get_model_name('coreset_only', coreset_size, coreset_method), j, prev_task_acc, avg_acc, data_name, experiment_name)
+        save_results(get_model_name('coreset_only', coreset_size, coreset_method), j, prev_task_acc, avg_acc, data_name, experiment_name, num_tasks)
         print(f"Train over task {i} avg: {avg_acc}")
 
         # update the previous coreset
