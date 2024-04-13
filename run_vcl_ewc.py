@@ -15,7 +15,7 @@ from models.mle_prior import MLEPrior
 
 from models.mlp import MLP
 from trainer.trainer import train_mle
-from data_generator import fetch_datasets
+from data.data_generator import fetch_datasets
 from utils.util import DEVICE, USE_CUDA, save_results, get_model_name
 from utils.task_config import load_task_config
 from coreset import update_coreset
