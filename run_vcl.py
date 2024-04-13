@@ -42,7 +42,7 @@ def run_vcl(
     coreset_size: int = 0,
     coreset_method: str = None,
     finetune_method: Optional[str] = None,
-    model_suffix: Optional[str] = '',
+    model_suffix: Optional[str] = None,
 ):
     input_dim, output_dim, hidden_sizes, single_head, data_name = load_task_config(task_config)
     train_loaders, test_loaders = fetch_datasets(batch_size, num_tasks, data_name)

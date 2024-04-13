@@ -122,7 +122,7 @@ def run_vcl_ewc(
     coreset_size: int = 0,
     coreset_method: str = 'random',
     finetune_method: Optional[str] = None,
-    model_suffix: Optional[str] = '',
+    model_suffix: Optional[str] = None,
     ewc_lambda: float = 0.0,
     ewc_gamma: float = 1.0,
 ):

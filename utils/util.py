@@ -43,10 +43,10 @@ def save_results(model_name, trained_on, prev_task_acc, avg_acc, data_name, expe
     results_df.to_csv(file_path, index=False)
     
 def get_model_name(base, coreset_size, coreset_method, model_suffix):
-    return f'{base}_{coreset_method}_{coreset_size}_{model_suffix}' if coreset_size > 0 else base
     if coreset_size > 0:
         model_name = f'{base}_{coreset_method}_{coreset_size}'
-        model_name = f'{model_name}_{model_suffix}' if len(model_suffix) else model_name
+        if model_suffix is not None:
+            model_name = f'{model_name}_{model_suffix}'
     else:
         model_name = base
     return model_name
