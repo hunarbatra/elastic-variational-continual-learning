@@ -31,7 +31,7 @@ split_cifar = {
     'data_name': 'split_cifar',
 }
 
-split_fashion_mnist = {
+fashion_mnist = {
     'input_dim': 784,
     'output_dim': 10, 
     'hidden_size': [150, 150, 150, 150],
