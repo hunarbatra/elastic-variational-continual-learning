@@ -25,7 +25,7 @@ from typing import Optional, List
 from tqdm import tqdm
 
 
-def compute_fisher_info(bnn, data_loader, head_modules, n_samples=200, ewc_gamma=1.):
+def compute_fisher_info(bnn, prev_fisher_info, data_loader, head_modules, n_samples=5000, ewc_gamma=1.):
     est_fisher_info = {}
     for name, param in bnn.named_parameters():
         if not any(name.startswith(head) for head in head_modules):
@@ -59,6 +59,12 @@ def compute_fisher_info(bnn, data_loader, head_modules, n_samples=200, ewc_gamma
     # Normalize the estimated Fisher information by the number of data points used for estimation
     est_fisher_info = {n: p / (index + 1) for n, p in est_fisher_info.items()}
     
+    if prev_fisher_info is not None:
+        for name, param in bnn.named_parameters():
+            if name in prev_fisher_info:
+                existing_values = prev_fisher_info[name]
+                est_fisher_info[name] += ewc_gamma * existing_values
+    
     return est_fisher_info
 
 class VariationalBNNWithEWC(tyxe.VariationalBNN):
@@ -77,29 +83,34 @@ class VariationalBNNWithEWC(tyxe.VariationalBNN):
         def _to(x, device):
             return map(lambda t: t.to(device) if device is not None else t, _as_tuple(x))
         
+        # num_data = len(data_loader.dataset)
+        # ewc_lambda_normalized = ewc_lambda / (num_data)
+        
         for i in range(num_epochs):
-            elbo = 0.
+            total_loss = 0.
             num_batch = 1
             for num_batch, (input_data, observation_data) in enumerate(iter(data_loader), 1):
-                elbo += svi.step(tuple(_to(input_data, device)), tuple(_to(observation_data, device))[0])
+                elbo = svi.step(tuple(_to(input_data, device)), tuple(_to(observation_data, device))[0])
                 
                 if ewc_lambda > 0 and fisher_info is not None:
                     ewc_loss = 0
                     for name, param in self.named_parameters():
                         if name in fisher_info:
                             ewc_loss += (fisher_info[name] * (param - prev_params[name]) ** 2).sum()
-                    num_data = len(data_loader.dataset)
-                    elbo -= (ewc_lambda / num_data) * ewc_loss # minimise negative ELBO i.e maximise ELBO and minimise KL-div
-                    # increasing ewc_lambda makes the network pay more attention to not deviating from previous tasks parameters
-                    # we normalise ewc_lambda with the data size, to ensure that the impact of EWC regularisation term is proportional to the size of the current tasks dataset. Without this normalisation, the EWC term could dominate ELBO which is already normalised by the number of data points.
+                    ewc_loss = (1./2) * ewc_loss
+                    total_loss += elbo + (ewc_lambda * ewc_loss)
+                    # total_loss += elbo + (ewc_lambda_normalized * ewc_loss)
+                else:
+                    total_loss += elbo
+                # increasing ewc_lambda makes the network pay more attention to not deviating from previous tasks parameters 
             
-            if callback is not None and callback(self, i, elbo / num_batch):
+            if callback is not None and callback(self, i, total_loss / num_batch):
                 break
         
         self.net.train(old_training_state)
-        return svi
+        return total_loss / num_batch
 
-def update_variational_approx(bnn, train_loader, curr_coreset, num_epochs, callback, ewc_lambda=0.0, fisher_info=None, prev_params=None, finetune_coreset=False):
+def update_variational_approx(bnn, train_loader, curr_coreset, num_epochs, callback, ewc_lambda, fisher_info=None, prev_params=None, finetune_coreset=False):
     # update the variational approx
     if not finetune_coreset:
         non_coreset_data = list(set(train_loader.dataset) - set(curr_coreset))  
@@ -113,7 +124,7 @@ def update_variational_approx(bnn, train_loader, curr_coreset, num_epochs, callb
     with tyxe.poutine.local_reparameterization():
         bnn.fit(data_loader, optim, num_epochs, device=DEVICE, callback=callback, ewc_lambda=ewc_lambda, fisher_info=fisher_info, prev_params=prev_params)
 
-def run_vcl_ewc(
+def run_evcl(
     num_tasks: int = 5,
     num_epochs: int = 10,
     experiment_name: str = 'test',
@@ -123,7 +134,7 @@ def run_vcl_ewc(
     coreset_method: str = 'random',
     finetune_method: Optional[str] = None,
     model_suffix: Optional[str] = None,
-    ewc_lambda: float = 0.0,
+    ewc_lambda: float = 100.0,
     ewc_gamma: float = 1.0,
 ):
     input_dim, output_dim, hidden_sizes, single_head, data_name = load_task_config(task_config)
@@ -158,7 +169,7 @@ def run_vcl_ewc(
         head_state_dicts.append(copy.deepcopy(head.state_dict()))  # initialize head state for each head
     
     prev_coreset = []
-    fisher_info = None
+    prev_fisher_info = None
     prev_params = None
     
     for i, train_loader in enumerate(train_loaders, 1):
@@ -181,10 +192,10 @@ def run_vcl_ewc(
         obs.dataset_size = len(train_loader.sampler)
         
         # update the variational approximation for non-coreset data points (or for the curr task if curr_coreset = [])
-        update_variational_approx(bnn, train_loader, curr_coreset, num_epochs, callback, ewc_lambda, fisher_info, prev_params)
+        update_variational_approx(bnn, train_loader, curr_coreset, num_epochs, callback, ewc_lambda, prev_fisher_info, prev_params)
         
         # Compute Fisher Information Matrix
-        fisher_info = compute_fisher_info(bnn, train_loader, head_modules, ewc_gamma=ewc_gamma)
+        fisher_info = compute_fisher_info(bnn, prev_fisher_info, train_loader, head_modules, ewc_gamma=ewc_gamma)
         prev_params = {name: param.detach().clone() for name, param in bnn.named_parameters() if not any(name.startswith(head) for head in head_modules)}
         
         head_state_dicts[head_idx-1] = copy.deepcopy(heads_list[head_idx-1].state_dict())  # save trained head
@@ -199,6 +210,7 @@ def run_vcl_ewc(
                 bnn_coreset_head_state_dicts = [copy.deepcopy(head.state_dict()) for head in bnn_coreset_heads_list]
                 bnn_coreset_fisher_info = None
                 bnn_coreset_prev_params = None
+                bnn_coreset_prev_fisher_info = None
             else:
                 bnn_coreset_heads_list[head_idx-1].load_state_dict(bnn_coreset_head_state_dicts[head_idx-1])
             
@@ -210,13 +222,13 @@ def run_vcl_ewc(
             # finetune the model on the coreset data
             bnn_coreset.net.set_task(head_idx)  # set the current task head for training bnn_coreset
             print(f"Current head being used for training bnn_coreset.net: {bnn_coreset.net.get_task()}")
-            update_variational_approx(bnn_coreset, train_loader, curr_coreset, num_epochs, callback, ewc_lambda, bnn_coreset_fisher_info, bnn_coreset_prev_params, finetune_coreset=True)
-            
+            update_variational_approx(bnn_coreset, train_loader, curr_coreset, num_epochs, callback, ewc_lambda, bnn_coreset_prev_fisher_info, bnn_coreset_prev_params, finetune_coreset=True)
             
             # Compute Fisher Information Matrix for bnn_coreset
             coreset_loader = torch.utils.data.DataLoader(curr_coreset, batch_size=train_loader.batch_size, shuffle=True)
-            bnn_coreset_fisher_info = compute_fisher_info(bnn_coreset, coreset_loader, head_modules, ewc_gamma=ewc_gamma)
+            bnn_coreset_fisher_info = compute_fisher_info(bnn_coreset, bnn_coreset_prev_fisher_info, coreset_loader, head_modules, n_samples=coreset_size, ewc_gamma=ewc_gamma)
             bnn_coreset_prev_params = {name: param.detach().clone() for name, param in bnn_coreset.named_parameters() if not any(name.startswith(head) for head in head_modules)}
+            bnn_coreset_prev_fisher_info = bnn_coreset_fisher_info
             
             bnn_coreset_head_state_dicts[head_idx-1] = copy.deepcopy(bnn_coreset_heads_list[head_idx-1].state_dict())  # update the bnn_coreset head for the current trained head for prediction
         
@@ -266,8 +278,9 @@ def run_vcl_ewc(
         params_to_update = tyxe.priors.DictPrior({site: list(bnn.net_guide.get_detached_distributions(site).values())[0] for site in site_names})
         bnn.update_prior(params_to_update)
         
-        # update the previous coreset
+        # update the previous coreset + fisher info
         prev_coreset = curr_coreset
+        prev_fisher_info = fisher_info
 
 if __name__ == '__main__':
-    fire.Fire(run_vcl_ewc)
+    fire.Fire(run_evcl)
