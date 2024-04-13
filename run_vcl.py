@@ -41,7 +41,8 @@ def run_vcl(
     batch_size: int = 256,
     coreset_size: int = 0,
     coreset_method: str = None,
-    finetune_method: Optional[str] = None
+    finetune_method: Optional[str] = None,
+    model_suffix: Optional[str] = '',
 ):
     input_dim, output_dim, hidden_sizes, single_head, data_name = load_task_config(task_config)
     train_loaders, test_loaders = fetch_datasets(batch_size, num_tasks, data_name)
@@ -157,7 +158,7 @@ def run_vcl(
             prev_task_acc.append(accuracy)
             
         avg_acc = sum(prev_task_acc)/len(prev_task_acc)
-        save_results(get_model_name('vcl', coreset_size, coreset_method), j, prev_task_acc, avg_acc, data_name, experiment_name, num_tasks)
+        save_results(get_model_name('vcl', coreset_size, coreset_method, model_suffix), j, prev_task_acc, avg_acc, data_name, experiment_name, num_tasks)
         print(f"Train over task {i} avg: {avg_acc}")
         
         # propagate bnn posterior as the next prior (q_{t-1})
