@@ -105,6 +105,7 @@ def run_coreset_only(
     coreset_size: int = 200,
     coreset_method: str = 'random',
     model_suffix: Optional[str] = None,
+    finetune_method: Optional[str] = None,
 ):
     input_dim, output_dim, hidden_sizes, single_head, data_name = load_task_config(task_config)
     train_loaders, test_loaders = fetch_datasets(batch_size, num_tasks, data_name)
