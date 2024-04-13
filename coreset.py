@@ -137,17 +137,17 @@ def run_coreset_only(
         
         # Callback function to compute the Evidence Lower Bound (ELBO) which is maximized during training
         # and to minimize the Kullback-Leibler (KL) divergence for VCL
-        elbos = []
-        pbar = tqdm(total=num_epochs, unit="Epochs", postfix=f"Task {i}")
+        # elbos = []
+        # pbar = tqdm(total=num_epochs, unit="Epochs", postfix=f"Task {i}")
         
-        def callback(_i, _ii, e):
-            elbos.append(e / len(train_loader.sampler))  # Compute ELBO per data point
-            pbar.update()
+        # def callback(_i, _ii, e):
+        #     elbos.append(e / len(train_loader.sampler))  # Compute ELBO per data point
+        #     pbar.update()
 
         obs.dataset_size = len(train_loader.sampler)
 
         # finetune the model on the coreset data
-        finetune_over_coreset(bnn, curr_coreset, num_epochs, callback=callback, batch_size=batch_size) 
+        finetune_over_coreset(bnn, curr_coreset, num_epochs, callback=None, batch_size=batch_size) 
         head_state_dicts[head_idx-1] = copy.deepcopy(heads_list[head_idx-1].state_dict())  # update the bnn head for the current trained head for prediction
 
         print(f"Train over task {i} Accuracies:")
