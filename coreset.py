@@ -12,8 +12,8 @@ import copy
 import functools
 from models.mlp import MLP
 from data_generator import fetch_datasets
-from utils import DEVICE, USE_CUDA, save_results, get_model_name
-from task_config import load_task_config
+from utils.util import DEVICE, USE_CUDA, save_results, get_model_name
+from utils.task_config import load_task_config
 from trainer.finetune import finetune_over_coreset
 from tqdm import tqdm
 from typing import Optional, List

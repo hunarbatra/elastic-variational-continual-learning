@@ -11,7 +11,7 @@ from torchvision.datasets import MNIST, EMNIST
 
 from PIL import Image, UnidentifiedImageError
 
-from utils import DEVICE, USE_CUDA
+from utils.util import DEVICE, USE_CUDA
 
 
 def make_permuted_mnist_dataloaders(batch_size, num_tasks):

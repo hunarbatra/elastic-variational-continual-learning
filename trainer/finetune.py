@@ -2,7 +2,7 @@ import torch
 import tyxe
 import pyro
 
-from utils import DEVICE    
+from utils.util import DEVICE    
         
         
 def finetune_over_coreset(bnn_coreset, curr_coreset, num_epochs, callback=None, batch_size=256, finetune_method=None):

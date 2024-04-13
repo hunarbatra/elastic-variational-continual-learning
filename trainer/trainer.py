@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from utils import DEVICE
+from utils.util import DEVICE
 
 def train_mle(net, train_loader, test_loader, epochs):
     net.to(DEVICE)

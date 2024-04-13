@@ -4,7 +4,7 @@ import pyro.distributions as dist
 from tyxe.priors import Prior
 
 from models.mlp import MLP
-from utils import DEVICE   
+from utils.util import DEVICE   
 
 
 class MLEPrior(Prior):
