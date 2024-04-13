@@ -41,3 +41,5 @@ trained_on,prev_tasks_acc,avg_acc,model,tasks_acc
 5,,0.94392,vcl_ewc_k-center_200,"[0.9471, 0.9412, 0.9299, 0.9466, 0.9548]"
 1,,0.97,vcl_ewc_pca-k-center_200,[0.97]
 2,,0.9641,vcl_ewc_pca-k-center_200,"[0.9669, 0.9613]"
+3,,0.954,vcl_ewc_pca-k-center_200,"[0.9593, 0.9504, 0.9523]"
+4,,0.9523499999999999,vcl_ewc_pca-k-center_200,"[0.9573, 0.945, 0.9509, 0.9562]"
