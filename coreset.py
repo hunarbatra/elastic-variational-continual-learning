@@ -33,15 +33,15 @@ def update_coreset(prev_coreset, train_loader, coreset_size, selection_method='r
         curr_coreset = k_center_coreset(combined_data, coreset_size)
     elif selection_method == 'pca-k-center':
         curr_coreset = pca_k_center_coreset(combined_data, coreset_size)
-    elif selection_method == 'vi':
-        curr_coreset = vi_coreset(combined_data, min(coreset_size, len(combined_data)))
+    # elif selection_method == 'vi':
+    #     curr_coreset = vi_coreset(combined_data, min(coreset_size, len(combined_data)))
     else:
         raise ValueError(f"Invalid selection method: {selection_method}")
     
     return curr_coreset
 
 def k_center_coreset(data, coreset_size):
-    data_array = np.array([x.numpy() for x, _ in data])
+    data_array = np.array([x.cpu().numpy() for x, _ in data])
     num_points = len(data_array)
 
     # Initialize the coreset with a random data point
@@ -71,7 +71,7 @@ def k_center_coreset(data, coreset_size):
     return [data[i] for i in coreset_indices]
 
 def pca_k_center_coreset(data, coreset_size):
-    data_array = np.array([x.numpy() for x, _ in data])
+    data_array = np.array([x.cpu().numpy() for x, _ in data])
 
     # Perform PCA to reduce the dimensionality
     pca = PCA(n_components=min(coreset_size, data_array.shape[1]))
