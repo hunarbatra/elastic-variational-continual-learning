@@ -31,6 +31,7 @@ def compute_fisher_info(bnn, prev_fisher_info, data_loader, head_modules, n_samp
         if not any(name.startswith(head) for head in head_modules):
             est_fisher_info[name] = param.detach().clone().zero_()
     
+    old_training_state = bnn.net.training
     bnn.net.eval()
     
     for index, (x, y) in enumerate(data_loader):
@@ -64,6 +65,9 @@ def compute_fisher_info(bnn, prev_fisher_info, data_loader, head_modules, n_samp
             if name in prev_fisher_info:
                 existing_values = prev_fisher_info[name]
                 est_fisher_info[name] += ewc_gamma * existing_values
+    
+    # restore old model state
+    bnn.net.train(old_training_state)
     
     return est_fisher_info
 
