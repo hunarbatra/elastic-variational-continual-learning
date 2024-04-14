@@ -4,6 +4,7 @@ import numpy as np
 
 import random
 import fire
+import os
 
 from model_names_mapper import MODEL_NAMES_MAPPER
 
@@ -35,10 +36,10 @@ def load_data(task_name, file_name, remove_models, experiments_dir):
     
     return model_data
 
-def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=None, remove_models=[], experiments_dir='./experiments'):
+def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=None, remove_models=[], experiments_dir='./experiments', paper_plot=False):
     model_data = load_data(task_name, file_name, remove_models, experiments_dir)
     
-    plt.figure(figsize=(10, 4), dpi=100)
+    plt.figure(figsize=(10, 4), dpi=100 if not paper_plot else 600)
     plt.style.use(['no-latex', 'notebook'])
 
     for model_name, accuracies in model_data.items():
@@ -80,8 +81,15 @@ def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=N
         plt.ylim(ylim_low, 1.0)
     plt.tight_layout()
     if save_name is not None:
-        plt.savefig(f'{experiments_dir}/{task_name}/{save_name}.pdf')
-    plt.show()
+        if not paper_plot:
+            plt.savefig(f'{experiments_dir}/{task_name}/{save_name}.pdf')
+        else:
+            save_dir = f'plots/'
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            plt.savefig(f'plots/{task_name}.pdf')
+    if not paper_plot:
+        plt.show()
         
     
 if __name__ == '__main__':
