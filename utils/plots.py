@@ -22,7 +22,13 @@ def load_data(task_name, file_name, remove_models, experiments_dir):
         accuracies = group['avg_acc'].tolist()
         model_data[model_name] = accuracies
     
-    sorted_models = sorted(model_data.keys(), key=lambda x: (x.startswith('evcl') or x.startswith('vcl_ewc'), x.startswith('vcl'), x.startswith('ewc'), x.startswith('coreset'), len(x)))
+    sorted_models = sorted(model_data.keys(), key=lambda x: (
+    not (x.startswith('evcl') or x.startswith('vcl_ewc')), 
+    not x.startswith('vcl'), 
+    not x.startswith('ewc'), 
+    not x.startswith('coreset'), 
+    len(x)
+))
     sorted_model_data = {model: model_data[model] for model in sorted_models}
     
     model_data = map_model_names(sorted_model_data)
@@ -33,7 +39,7 @@ def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=N
     model_data = load_data(task_name, file_name, remove_models, experiments_dir)
     
     plt.figure(figsize=(10, 4), dpi=100)
-    # plt.style.use(['science', 'ieee'])
+    plt.style.use(['no-latex', 'notebook'])
 
     for model_name, accuracies in model_data.items():
         line_style = '-'
@@ -56,7 +62,7 @@ def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=N
                 line_style = '-'
                 marker = 'o'
         elif 'Only' in model_name:
-            line_style = '--'
+            line_style = '-.'
             marker = 'p'
 
         x = range(1, len(accuracies) + 1)
@@ -68,6 +74,8 @@ def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=N
         plt.title(title, fontsize=12)
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
     plt.xticks(range(1, len(x) + 1))  
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
     if ylim_low is not None:
         plt.ylim(ylim_low, 1.0)
     plt.tight_layout()
