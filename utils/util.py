@@ -32,7 +32,7 @@ def save_results(model_name, trained_on, prev_task_acc, avg_acc, data_name, expe
     results_df = pd.concat([results_df, new_row], ignore_index=True)
     results_df.to_csv(file_path, index=False)
     
-def get_model_name(base, coreset_size, coreset_method, model_suffix):
+def get_model_name(base, coreset_size=0, coreset_method=None, model_suffix=None):
     model_name = f'{base}_{coreset_method}_{coreset_size}' if coreset_size > 0 else base
     
     if model_suffix is not None:
