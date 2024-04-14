@@ -180,8 +180,14 @@ def run_evcl(
         heads_list[head_idx-1].load_state_dict(head_state_dicts[head_idx-1])  # load head for current task (PyroLinear Head)
         
         # update coreset
-        curr_coreset = update_coreset(prev_coreset, train_loader, coreset_size, coreset_method) if coreset_size else []
-        
+        if coreset_size == 0:
+            curr_coreset = [] 
+        else: 
+            if coreset_method == 'class_balanced':
+                curr_coreset = update_coreset(prev_coreset, train_loaders, coreset_size, coreset_method, curr_idx=i)
+            else: 
+                curr_coreset = update_coreset(prev_coreset, train_loader, coreset_size, coreset_method) 
+                        
         elbos = []
         pbar = tqdm(total=num_epochs, unit="Epochs", postfix=f"Task {i}")
         

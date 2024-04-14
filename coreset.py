@@ -26,10 +26,30 @@ from tqdm import tqdm
 from typing import Optional, List
 
 
-def update_coreset(prev_coreset, train_loader, coreset_size, selection_method='random'):
-    curr_task_data = list(train_loader.dataset)
-    curr_task_data = random.sample(curr_task_data, min(coreset_size*2, len(curr_task_data))) # truncating current tasks data to {coreset_size * 2} to make it lil faster
-    combined_data = curr_task_data + prev_coreset if prev_coreset else curr_task_data
+def update_coreset(prev_coreset, train_loader, coreset_size, selection_method='random', curr_idx=0):
+    if isinstance(train_loader, list) and selection_method == 'class_balanced':
+        tasks_so_far_data = []
+        assert curr_idx > 0
+        for i in range(0, curr_idx):
+            tasks_so_far_data.append(train_loader[i])
+        
+        # Create a class-balanced list of combined_data for the total size of coreset_size
+        combined_data = []
+        num_tasks = len(tasks_so_far_data)
+        samples_per_task = coreset_size // num_tasks
+        for curr_task_loader in tasks_so_far_data:
+            curr_task_data = list(curr_task_loader.dataset)
+            combined_data.extend(random.sample(curr_task_data, samples_per_task))
+        
+        remaining_samples = coreset_size - len(combined_data)
+        if remaining_samples > 0:
+            combined_data.extend(random.sample(list(tasks_so_far_data[-1].dataset), remaining_samples))
+        return combined_data
+        
+    elif isinstance(train_loader, torch.utils.data.dataloader.DataLoader):
+        curr_task_data = list(train_loader.dataset)
+        curr_task_data = random.sample(curr_task_data, min(coreset_size*2, len(curr_task_data))) # truncating current tasks data to {coreset_size * 2} to make it lil faster
+        combined_data = curr_task_data + prev_coreset if prev_coreset else curr_task_data
     
     if selection_method == 'random':
         curr_coreset = random.sample(combined_data, min(coreset_size, len(combined_data)))
@@ -134,7 +154,13 @@ def run_coreset_only(
         heads_list[head_idx-1].load_state_dict(head_state_dicts[head_idx-1])  # load head for current task (PyroLinear Head)
 
         # update coreset
-        curr_coreset = update_coreset(prev_coreset, train_loader, coreset_size, coreset_method)
+        if coreset_size == 0:
+            curr_coreset = [] 
+        else: 
+            if coreset_method == 'class_balanced':
+                curr_coreset = update_coreset(prev_coreset, train_loaders, coreset_size, coreset_method, curr_idx=i)
+            else: 
+                curr_coreset = update_coreset(prev_coreset, train_loader, coreset_size, coreset_method) 
         
         # Callback function to compute the Evidence Lower Bound (ELBO) which is maximized during training
         # and to minimize the Kullback-Leibler (KL) divergence for VCL
