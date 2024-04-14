@@ -199,7 +199,7 @@ def run_coreset_only(
             prev_task_acc.append(accuracy)
 
         avg_acc = sum(prev_task_acc) / len(prev_task_acc)
-        save_results(get_model_name('coreset_only', coreset_size, coreset_method, model_suffix), j, prev_task_acc, avg_acc, data_name, experiment_name, num_tasks)
+        save_results(get_model_name('coreset_only', coreset_size, coreset_method, model_suffix), j, prev_task_acc, avg_acc, data_name, experiment_name)
         print(f"Train over task {i} avg: {avg_acc}")
 
         # update the previous coreset

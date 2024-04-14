@@ -8,10 +8,10 @@ from sklearn.metrics import auc
 USE_CUDA = torch.cuda.is_available()
 DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
-RESULTS_SCHEMA = {'model': [], 'trained_on': [], 'tasks_acc': [], 'avg_acc': [], 'auc': [], 'aoc': []}
+RESULTS_SCHEMA = {'model': [], 'trained_on': [], 'tasks_acc': [], 'avg_acc': []}
 
 
-def save_results(model_name, trained_on, prev_task_acc, avg_acc, data_name, experiment_name, num_tasks):
+def save_results(model_name, trained_on, prev_task_acc, avg_acc, data_name, experiment_name):
     dir_path = f"experiments/{data_name}"
     file_path = f"{dir_path}/{experiment_name}.csv"
 
@@ -28,16 +28,6 @@ def save_results(model_name, trained_on, prev_task_acc, avg_acc, data_name, expe
         'tasks_acc': [prev_task_acc],
         'avg_acc': [avg_acc]
     })
-
-    if trained_on == num_tasks:
-        model_rows = results_df[results_df['model'] == model_name]
-        model_rows = model_rows.sort_values(by=['trained_on', 'avg_acc'])
-        auc_value = auc(model_rows['trained_on'], model_rows['avg_acc'])
-        new_row['auc'] = auc_value
-        new_row['aoc'] = 1 - auc_value
-    else:
-        new_row['auc'] = 0
-        new_row['aoc'] = 0
 
     results_df = pd.concat([results_df, new_row], ignore_index=True)
     results_df.to_csv(file_path, index=False)
