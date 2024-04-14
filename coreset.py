@@ -137,9 +137,8 @@ def run_coreset_only(
     prior = tyxe.priors.IIDPrior(dist.Normal(0, 1), expose_all=False, hide_all=True)
     guide = None
 
-    # Variational BNN
-    bnn = tyxe.VariationalBNN(net, prior, obs, guide)  # convert net to BNN
-    heads_list = [getattr(bnn.net, f"Head_{i+1}") for i in range(num_heads)]
+    mlp = tyxe.VariationalBNN(net, prior, obs, guide)  
+    heads_list = [getattr(mlp.net, f"Head_{i+1}") for i in range(num_heads)]
     print(f"heads_list: {heads_list}")
     head_state_dicts = []
     for head in heads_list:
@@ -149,8 +148,8 @@ def run_coreset_only(
     for i, train_loader in enumerate(train_loaders, 1):
         # set the current head for training to the current task head
         head_idx = i if not single_head else 1
-        bnn.net.set_task(head_idx)  # set current head for forward passes for training
-        print(f"Current head being used for training bnn.net: {bnn.net.get_task()}")
+        mlp.net.set_task(head_idx)  # set current head for forward passes for training
+        print(f"Current head being used for training mlp.net: {mlp.net.get_task()}")
         heads_list[head_idx-1].load_state_dict(head_state_dicts[head_idx-1])  # load head for current task (PyroLinear Head)
 
         # update coreset
@@ -174,23 +173,23 @@ def run_coreset_only(
         obs.dataset_size = len(train_loader.sampler)
 
         # finetune the model on the coreset data
-        finetune_over_coreset(bnn, curr_coreset, num_epochs, callback=None, batch_size=batch_size) 
-        head_state_dicts[head_idx-1] = copy.deepcopy(heads_list[head_idx-1].state_dict())  # update the bnn head for the current trained head for prediction
+        finetune_over_coreset(mlp, curr_coreset, num_epochs, callback=None, batch_size=batch_size) 
+        head_state_dicts[head_idx-1] = copy.deepcopy(heads_list[head_idx-1].state_dict())  # update the mlp head for the current trained head for prediction
 
         print(f"Train over task {i} Accuracies:")
         prev_task_acc = []
         for j, test_loader in enumerate(test_loaders[:i], 1):
             # set the current head for eval (respective task head)
             eval_head_idx = j if not single_head else 1
-            bnn.net.set_task(eval_head_idx)  # set current tasks head for forward passes for evaluation
-            print(f"Current head being used for evaluating bnn.net: {bnn.net.get_task()}")
+            mlp.net.set_task(eval_head_idx)  # set current tasks head for forward passes for evaluation
+            print(f"Current head being used for evaluating mlp.net: {mlp.net.get_task()}")
             heads_list[eval_head_idx-1].load_state_dict(head_state_dicts[eval_head_idx-1])  # load head state for eval
 
             correct = 0
             total = 0
             for x, y in test_loader:
                 x, y = x.to(DEVICE), y.to(DEVICE)
-                preds = bnn.predict(x, num_predictions=8)
+                preds = mlp.predict(x, num_predictions=8)
                 correct += (preds.argmax(-1) == y).sum().item()
                 total += len(y)
 
