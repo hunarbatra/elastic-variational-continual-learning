@@ -24,8 +24,8 @@ def load_data(task_name, file_name, remove_models, experiments_dir):
         model_data[model_name] = accuracies
     
     sorted_models = sorted(model_data.keys(), key=lambda x: (
-    not (x.startswith('evcl') or x.startswith('vcl_ewc')), 
     not x.startswith('vcl'), 
+    not (x.startswith('evcl') or x.startswith('vcl_ewc')), 
     not x.startswith('ewc'), 
     not x.startswith('coreset'), 
     len(x)
@@ -36,10 +36,10 @@ def load_data(task_name, file_name, remove_models, experiments_dir):
     
     return model_data
 
-def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=None, remove_models=[], experiments_dir='./experiments', paper_plot=False):
+def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=None, ylim_high=None, remove_models=[], experiments_dir='./experiments', paper_plot=False, top_legend=False):
     model_data = load_data(task_name, file_name, remove_models, experiments_dir)
     
-    plt.figure(figsize=(10, 4), dpi=100 if not paper_plot else 600)
+    plt.figure(figsize=(9, 4), dpi=100 if not paper_plot else 600)
     plt.style.use(['no-latex', 'notebook'])
 
     for model_name, accuracies in model_data.items():
@@ -72,12 +72,17 @@ def plot_avg_accuracy(task_name, file_name, save_name=None, title='', ylim_low=N
     plt.xlabel('# tasks', fontsize=10)
     plt.ylabel('Average Accuracy', fontsize=10)
     if len(title) > 0:
-        plt.title(title, fontsize=12)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+        plt.title(title, fontsize=10, y=0.9)
+    if top_legend:
+        plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=4, fontsize=10, borderaxespad=0., frameon=True)
+    else:
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
     plt.xticks(range(1, len(x) + 1))  
     plt.xticks(fontsize=10)
     plt.yticks(fontsize=10)
-    if ylim_low is not None:
+    if ylim_low is not None and ylim_high is not None:
+        plt.ylim(ylim_low, ylim_high)
+    elif ylim_low is not None:
         plt.ylim(ylim_low, 1.0)
     plt.tight_layout()
     if save_name is not None:
