@@ -2,7 +2,7 @@
 Continual learning aims to train models on sequential tasks while balancing adaptation to new data and retention of existing knowledge. This work introduces Elastic Variational Continual Learning with Weight Consolidation (EVCL-WC), a novel hybrid model that integrates the variational posterior approximation mechanism of Variational Continual Learning (VCL) with the regularization-based parameter protection strategy of Elastic Weight Consolidation (EWC). By combining the strengths of both methods, EVCL-WC effectively mitigates catastrophic forgetting and enables better capture of dependencies between model parameters and task-specific data. Evaluated on five discriminative tasks, EVCL-WC consistently outperforms existing baselines in both domain-incremental and task-incremental learning scenarios for deep discriminative models.
 
 # Steps to run:
-## EVCL-WC:
+### EVCL-WC:
 ```python
 python3 run_evcl.py \
         --num_tasks=5 \
@@ -12,7 +12,7 @@ python3 run_evcl.py \
         --ewc_lambda=100 # EWC regularization term λ
 ```
 
-## VCL and VCL + Coresets:
+### VCL and VCL + Coresets:
 ```python
 python3 run_vcl.py \
         --num_tasks=5 \
@@ -24,7 +24,7 @@ python3 run_vcl.py \
 ```
 Note: set coreset_size = 0, and coreset_method = None, if running VCL without coreset.
 
-## EWC:
+### EWC:
 ```python
 python3 run_ewc.py \
         --num_tasks=5 \
@@ -34,7 +34,7 @@ python3 run_ewc.py \
         --ewc_lambda=100 \ # EWC regularization term λ
 ```
 
-## Coreset Only:
+### Coreset Only:
 ```python
 python3 coreset.py \
   --num_tasks=5 \
@@ -45,5 +45,18 @@ python3 coreset.py \
 ```
 
 # Results
-## PermutedMNIST:
-![Permuted MNIST Plot](https://raw.githubusercontent.com/hunarbatra/elastic-variational-continual-learning/main/plots/permuted_mnist.png)
+### PermutedMNIST:
+![Permuted MNIST Plot](https://github.com/hunarbatra/elastic-variational-continual-learning/blob/main/plots/permuted_mnist.png)
+
+### SplitMNIST:
+![Split MNIST Plot](https://github.com/hunarbatra/elastic-variational-continual-learning/blob/main/plots/split_mnist.png)
+
+### SplitNotMNIST:
+![Split Not MNIST Plot](https://github.com/hunarbatra/elastic-variational-continual-learning/blob/main/plots/no_mnist.png)
+
+### SplitFashionMNIST:
+![Split Fashion MNIST Plot](https://github.com/hunarbatra/elastic-variational-continual-learning/blob/main/plots/fashion_mnist.png)
+
+### SplitCIFAR:
+![Split CIFAR Plot](https://github.com/hunarbatra/elastic-variational-continual-learning/blob/main/plots/split_cifar.png)
+
