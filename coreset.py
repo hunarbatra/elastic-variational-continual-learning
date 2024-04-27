@@ -160,15 +160,6 @@ def run_coreset_only(
                 curr_coreset = update_coreset(prev_coreset, train_loaders, coreset_size, coreset_method, curr_idx=i)
             else: 
                 curr_coreset = update_coreset(prev_coreset, train_loader, coreset_size, coreset_method) 
-        
-        # Callback function to compute the Evidence Lower Bound (ELBO) which is maximized during training
-        # and to minimize the Kullback-Leibler (KL) divergence for VCL
-        # elbos = []
-        # pbar = tqdm(total=num_epochs, unit="Epochs", postfix=f"Task {i}")
-        
-        # def callback(_i, _ii, e):
-        #     elbos.append(e / len(train_loader.sampler))  # Compute ELBO per data point
-        #     pbar.update()
 
         obs.dataset_size = len(train_loader.sampler)
 

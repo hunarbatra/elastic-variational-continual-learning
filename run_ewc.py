@@ -192,20 +192,3 @@ def run_ewc(
 if __name__ == '__main__':
     fire.Fire(run_ewc)
     
-    
-    # input_data, observation_data = tuple(_to(input_data, device)), tuple(_to(observation_data, device))[0]
-    #             input_tensor = input_data[0]  # Extract the input tensor from the tuple
-    #             y_hat = self.net(input_tensor)
-    #             loss = torch.nn.functional.cross_entropy(input=y_hat, target=observation_data, reduction='mean')
-
-    #             if ewc_lambda > 0 and fisher_info is not None:
-    #                 ewc_losses = []
-    #                 for name, param in self.named_parameters():
-    #                     if name in fisher_info:
-    #                         fisher = fisher_info[name]
-    #                         mean = prev_params[name]
-    #                         ewc_losses.append((fisher * (param - mean)**2).sum())
-    #                 ewc_loss = (1./2)*sum(ewc_losses)
-    #                 total_loss += loss + ewc_lambda*ewc_loss
-    #             else:
-    #                 total_loss += loss
