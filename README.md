@@ -1,7 +1,9 @@
-# Abstract
+# EVCL-WC: Elastic Variational Continual Learning with Weight Consolidation
+
+## Abstract
 Continual learning aims to train models on sequential tasks while balancing adaptation to new data and retention of existing knowledge. This work introduces Elastic Variational Continual Learning with Weight Consolidation (EVCL-WC), a novel hybrid model that integrates the variational posterior approximation mechanism of Variational Continual Learning (VCL) with the regularization-based parameter protection strategy of Elastic Weight Consolidation (EWC). By combining the strengths of both methods, EVCL-WC effectively mitigates catastrophic forgetting and enables better capture of dependencies between model parameters and task-specific data. Evaluated on five discriminative tasks, EVCL-WC consistently outperforms existing baselines in both domain-incremental and task-incremental learning scenarios for deep discriminative models.
 
-# Steps to run:
+## Steps to run:
 ### EVCL-WC:
 ```python
 python3 run_evcl.py \
@@ -44,7 +46,7 @@ python3 coreset.py \
   --coreset_method='random' # supported coreset_methods: ['random', 'k-center', 'pca-k-center', 'class_balanced']
 ```
 
-# Results
+## Results
 ### PermutedMNIST:
 ![Permuted MNIST Plot](https://github.com/hunarbatra/elastic-variational-continual-learning/blob/main/plots/permuted_mnist.png)
 
